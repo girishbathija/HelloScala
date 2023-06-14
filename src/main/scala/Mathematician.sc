@@ -27,6 +27,8 @@ println(aParameterlessFunction)
 //can we insert comments?
 print("test")
 
+/*
+
 val y = List(1,2,3,4,5) match {
   case List(x, List(2, List(4, _))) => x
   case Nil => 42
@@ -34,3 +36,6 @@ val y = List(1,2,3,4,5) match {
   case List(h, t) => h + 3
   case _ => 101
 }
+*/
+
+497.41f * 0.01f

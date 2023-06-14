@@ -4,6 +4,7 @@ import scala.util.{Try, Using}
 
 object FileUtil {
 
+  //TODO - create an overloaded function to ignore the header of a csv file
   def readFileAsSeq(filename: String): Try[Seq[String]] =
     Using(io.Source.fromResource(filename)) {
       _.getLines().toList
