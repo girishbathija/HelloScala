@@ -1,4 +1,5 @@
-﻿John,2020-01-01,apples,0.01
+gatherer,date,fruit,amount
+John,2020-01-01,apples,0.01
 John,2020-01-01,oranges,0.06
 John,2020-01-01,strawberries,0
 John,2020-01-01,plums,0

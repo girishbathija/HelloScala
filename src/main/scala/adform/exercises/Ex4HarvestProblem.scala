@@ -1,8 +1,5 @@
 package adform.exercises
 
-import scala.util.Try
-
-
 /*
 Harvest
 You are a fruit farm manager and you have several employees. Your employees gather fruits every day. Your task is to reward the best employees and drive your farm towards the best profitability. Of course, you can't do that without proper data.
@@ -23,97 +20,136 @@ fruit,date,price
 */
 object Ex4HarvestProblem extends App {
 
-  //TODO - use LocalDate instead of String date
-  case class FruitLineItem(gatherer: String, date: String, fruit: String, amount: Float) {
-    def dailyPriceKey: String = fruit+"_"+date
-  }
-
-  object FruitLineItem {
-    def apply(csvLine: String): FruitLineItem = {
-      val fields = csvLine.split(",")
-      new FruitLineItem(fields(0), fields(1), fields(2), fields(3).toFloat)
-    }
-  }
-
-  private val harvestData: Try[Seq[String]] = FileUtil.readFileAsSeq("adform/ex4_harvest.csv")
-//  FileUtil.printParsedFile(harvestData)
-
-  private val priceData: Try[Seq[String]] = FileUtil.readFileAsSeq("adform/ex4_prices.csv")
-//  FileUtil.printParsedFile(priceData)
-
-  private val harvestDataSeq: Seq[String] = harvestData.get
-
-  private val monthlyHarvest: Map[String, Seq[FruitLineItem]] = harvestDataSeq
-    .map(FruitLineItem(_))
-    .groupBy(fruit => fruit.date.substring(0, 7)) // group by month
-  // TODO - use sorted map to maintain ordering of keys or just sort by keys while printing
-//  println(monthlyHarvest)
+  // Intentional about throwing an exception. want the execution to halt in case of an exception
+  val harvestCsv: Seq[String] = FileUtil.readFileAsSeq("adform/ex4_harvest.csv", true).get
+  //  harvestData.foreach(println)
 
   //NOTE - edited the file to include missing prices for 2020-01-01
-  private val prices: Seq[String] = priceData.get
+  val pricesCsv: Seq[String] = FileUtil.readFileAsSeq("adform/ex4_prices.csv", true).get
+  //  prices.foreach(println)
 
-  private val dailyFruitPrice: Map[String, Float] = prices
-    .view
-    .map(s => {
-      val fields = s.split(",")
-      (fields(0) + "_" + fields(1), fields(2).toFloat) //Map Tuple (fruit_date, price)
-    })
-    .toMap
-  println(dailyFruitPrice)
-  println(dailyFruitPrice.get("apples_2020-01-01"))
+  //Q 1a
+  println("\n1a. Who is your best gatherer in terms of the amounts of fruits gathered every month?")
+  HarvestSolution.topGathererPerMonth.toSeq.sortBy(_._1).foreach(println)
 
-  //Q 1.a
-  private val topGathererByMonth: Map[String, String] = monthlyHarvest
-    .view
-    .mapValues(
-      oneMonthFruits => {
-        val groupedByGathererSumAmount = oneMonthFruits.groupMapReduce(_.gatherer)(_.amount)(_ + _)
-        groupedByGathererSumAmount.maxBy(_._2)._1 //max by value, fetch key
-      }
-    )
-    .toMap
+  //Q 1b
+  println("\n1b. Are there employees that are better at gathering some specific fruit ?")
+  HarvestSolution.topFruitByGatherer.toSeq.sortBy(_._1).foreach(println)
 
-  println("1. Top Gatherer By Month - \n"+topGathererByMonth) // verify : 5 - jason, 2 - jake
+  //Q2a
+  println("\n2a. What is your least and best-earning fruit by month?")
+  HarvestSolution.worstNBestFruitByRevenuePerMonth.toSeq.sortBy(_._1).foreach(println)
 
-  //Q2 a. by month
-  def mapFruitLineItemSeqToFruitByRevenueTuple(fruits: Seq[FruitLineItem]) = {
-    //TODO - bug - unable to fetch price for apples_2020-01-01 although it exists in the map
-    val groupedByFruitSumAmount = fruits.map(fruit => (fruit.fruit, fruit.amount * dailyFruitPrice.getOrElse(fruit.dailyPriceKey, 0f))).groupMapReduce(_._1)(_._2)(_ + _)
-    (groupedByFruitSumAmount.minBy(_._2), groupedByFruitSumAmount.maxBy(_._2)) //return a tuple of (min,max) by value
+  //Q2b
+  println("\n2b. What is your least and best-earning fruit by year?")
+  HarvestSolution.worstBestFruitByRevenuePerYear.toSeq.sortBy(_._1).foreach(println)
+
+  //Q3a
+  println("\n3a. Which gatherer contributed least and most to your income every month ?")
+  HarvestSolution.worstNBestGathererByRevenuePerMonth.toSeq.sortBy(_._1).foreach(println)
+
+  //Q3b
+  println("\n3b. Which gatherer contributed least and most to your income every yr ?")
+  HarvestSolution.worstNBestGathererByRevenuePerYear.toSeq.sortBy(_._1).foreach(println)
+}
+
+//TODO - exercise: try LocalDate instead of String date
+case class FruitLineItem(gatherer: String, date: String, fruit: String, amount: Float) {
+  def dailyPriceKey: String = fruit + "_" + date
+}
+
+object FruitLineItem {
+  def apply(csvLine: String): FruitLineItem = {
+    val fields = csvLine.split(",")
+    new FruitLineItem(fields(0), fields(1), fields(2), fields(3).toFloat)
+  }
+}
+
+object HarvestSolution {
+
+  //this is okay coz Objects are initialised when they are used
+  val harvestData: Seq[FruitLineItem] = Ex4HarvestProblem.harvestCsv.map(FruitLineItem(_))
+
+  val dailyPrices: Map[String, Float] =
+    Ex4HarvestProblem
+      .pricesCsv
+      .view
+      .map(s => {
+        val fields = s.split(",")
+        (fields(0) + "_" + fields(1), fields(2).toFloat)
+      })
+      .toMap
+
+
+  def topGathererPerMonth: Map[String, String] =
+    harvestData
+      .groupBy(fruit => fruit.date.substring(0, 7)) // group by month
+      .view
+      .mapValues(
+        oneMonthFruits =>
+          oneMonthFruits
+            .groupMapReduce(_.gatherer)(_.amount)(_ + _)
+            .maxBy(_._2) //max by amount
+            ._1 // fetch gatherer
+      )
+      .toMap
+
+  def topFruitByGatherer =
+    harvestData
+      .groupBy(_.gatherer)
+      .view
+      .mapValues(
+        fruitsByGatherer =>
+          fruitsByGatherer
+            .groupMapReduce(_.fruit)(_.amount)(_ + _)
+            .maxBy(_._2)
+      )
+      .toMap
+
+  //TODO - generalise and merge with groupByGathererMinMaxRevenue
+  def groupByFruitMinMaxRevenue(fruits: Seq[FruitLineItem]) = {
+    val groupedByFruitSumRevenue =
+      fruits
+        .map(fruit => (fruit.fruit, fruit.amount * dailyPrices(fruit.dailyPriceKey)))
+        .groupMapReduce(_._1)(_._2)(_ + _)
+    (groupedByFruitSumRevenue.minBy(_._2), groupedByFruitSumRevenue.maxBy(_._2)) //return a tuple of (min,max) by revenue (amount * price)
   }
 
+  //TODO - parameterise group by duration
+  def worstNBestFruitByRevenuePerMonth: Map[String, ((String, Float), (String, Float))] =
+    harvestData
+      .groupBy(fruit => fruit.date.substring(0, 7)) // group by month
+      .view
+      .mapValues(oneMonthFruits => groupByFruitMinMaxRevenue(oneMonthFruits))
+      .toMap
 
-  private val minMaxFruitByRevenuePerMonth: Map[String, ((String, Float), (String, Float))] = monthlyHarvest
-    .view
-    .mapValues(oneMonthFruits => mapFruitLineItemSeqToFruitByRevenueTuple(oneMonthFruits))
-    .toMap
-  println()
-  println("2. Worst and Best Fruit by Revenue every month - \n"+minMaxFruitByRevenuePerMonth)
+  def worstBestFruitByRevenuePerYear: Map[String, ((String, Float), (String, Float))] =
+    harvestData
+      .groupBy(fruit => fruit.date.substring(0, 4)) // group by year
+      .view
+      .mapValues(oneYrFruits => groupByFruitMinMaxRevenue(oneYrFruits))
+      .toMap
 
-  //Q2 b. by year
-  private val minMaxFruitByRevenueForYear: ((String, Float), (String, Float)) = mapFruitLineItemSeqToFruitByRevenueTuple(harvestDataSeq.map(FruitLineItem(_)))
-
-  println("2. Worst and Best Fruit by Revenue every month - \n"+minMaxFruitByRevenueForYear)
-
-  //Q3 a. by month
-  def mapFruitLineItemSeqToGathererByRevenueTuple(fruits: Seq[FruitLineItem]) = {
-    //TODO - bug - unable to fetch price for apples_2020-01-01 although it exists in the map
-    val groupedByFruitSumAmount = fruits.map(fruit => (fruit.gatherer, fruit.amount * dailyFruitPrice.getOrElse(fruit.dailyPriceKey, 0f))).groupMapReduce(_._1)(_._2)(_ + _)
-    (groupedByFruitSumAmount.minBy(_._2), groupedByFruitSumAmount.maxBy(_._2)) //return a tuple of (min,max) by value
+  def groupByGathererMinMaxRevenue(fruits: Seq[FruitLineItem]) = {
+    val groupedByFruitSumRevenue =
+      fruits
+        .map(fruit => (fruit.gatherer, fruit.amount * dailyPrices(fruit.dailyPriceKey)))
+        .groupMapReduce(_._1)(_._2)(_ + _)
+    (groupedByFruitSumRevenue.minBy(_._2), groupedByFruitSumRevenue.maxBy(_._2)) //return a tuple of (min,max) by revenue
   }
 
+  //TODO - parameterise group by duration
+  def worstNBestGathererByRevenuePerMonth: Map[String, ((String, Float), (String, Float))] =
+    harvestData
+      .groupBy(fruit => fruit.date.substring(0, 7)) // group by month
+      .view
+      .mapValues(oneMonthFruits => groupByGathererMinMaxRevenue(oneMonthFruits))
+      .toMap
 
-  private val minMaxGathererByRevenuePerMonth: Map[String, ((String, Float), (String, Float))] = monthlyHarvest
-    .view
-    .mapValues(oneMonthFruits => mapFruitLineItemSeqToGathererByRevenueTuple(oneMonthFruits))
-    .toMap
-  println()
-  println("2. Worst and Best Gatherer by Revenue every month - \n" + minMaxGathererByRevenuePerMonth)
-  //TODO - returning 0 revenue for minimum entry - John 0 for 2020-01; this needs to be checked; need to debug
-
-  //Q2 b. by year
-  private val minMaxGathererByRevenueForYear: ((String, Float), (String, Float)) = mapFruitLineItemSeqToGathererByRevenueTuple(harvestDataSeq.map(FruitLineItem(_)))
-
-  println("2. Worst and Best Gatherer by Revenue every month - \n" + minMaxGathererByRevenueForYear)
-  //TODO - returning 0 revenue for minimum entry - John 0; this does is definitely wrong; need to debug
+  def worstNBestGathererByRevenuePerYear: Map[String, ((String, Float), (String, Float))] =
+    harvestData
+      .groupBy(fruit => fruit.date.substring(0, 4)) // group by year
+      .view
+      .mapValues(oneYrFruits => groupByGathererMinMaxRevenue(oneYrFruits))
+      .toMap
 }
