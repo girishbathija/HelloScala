@@ -1,4 +1,4 @@
-package rtj.exercises.part1basics;
+package rtj.beginner.part1basics;
 
 object CBNvsCBV extends App {
 

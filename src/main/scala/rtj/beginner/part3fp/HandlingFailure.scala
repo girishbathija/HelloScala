@@ -1,4 +1,4 @@
-package rtj.exercises.part3fp
+package rtj.beginner.part3fp
 
 import scala.util.{Failure, Random, Success, Try}
 

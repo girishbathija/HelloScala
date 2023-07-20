@@ -1,4 +1,4 @@
-package rtj.exercises.part4pm
+package rtj.beginner.part4pm
 
 import scala.util.Random
 

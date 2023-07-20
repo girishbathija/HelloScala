@@ -1,4 +1,4 @@
-package rtj.exercises.part2oop
+package rtj.beginner.part2oop
 
 import scala.language.postfixOps
 

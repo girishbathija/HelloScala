@@ -1,4 +1,4 @@
-package rtj.exercises.part1basics;object Expressions extends App {
+package rtj.beginner.part1basics;object Expressions extends App {
 
   //Everything is a expression in scala; there are no statements; statement return type -> Unit
   // Unit is synonymous to void in java

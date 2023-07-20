@@ -1,4 +1,4 @@
-package rtj.exercises.part1basics;object Recursion extends App {
+package rtj.beginner.part1basics;object Recursion extends App {
 
         def factorial(n: Int): BigInt = {
                 if (n == 1) 1

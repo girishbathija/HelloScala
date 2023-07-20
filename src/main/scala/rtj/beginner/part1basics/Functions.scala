@@ -1,4 +1,4 @@
-package rtj.exercises.part1basics;object Functions extends App {
+package rtj.beginner.part1basics;object Functions extends App {
 
         def fibonacci(n: Int): Int = {
                 if (n <= 2) 1
